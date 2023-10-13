@@ -3,6 +3,8 @@ This is a MATLAB toolbox to implement metric graphs and divisors on metric graph
 More precisely, this toolbox contains classes to work with metric graphs, divisors, double coverings of metric graphs and antisymmetric divisors on a double covering. 
 Dhar's algorithm and the computation of the euclidean distance of a divisor are implemented.
 
+For the mathematical background, one can refer itself to [these notes](https://arxiv.org/abs/2210.14060).
+
 To learn hot to use this package, you can open the GettingStarted.mlx file.
 
 If you have any bug report, remark or suggestions, you can e-mail me at thomas DOT saillez AT ulb DOT be.
