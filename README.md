@@ -1,5 +1,5 @@
 # DivisorsOnMetricGraphs
-This is a Matlab toolbox to implement metric graphs and divisors on metric graphs. 
+This is a MATLAB toolbox to implement metric graphs and divisors on metric graphs. 
 More precisely, this toolbox contains classes to work with metric graphs, divisors, double coverings of metric graphs and antisymmetric divisors on a double covering. 
 Dhar's algorithm and the computation of the euclidean distance of a divisor are implemented.
 
