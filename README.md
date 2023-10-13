@@ -7,6 +7,8 @@ For the mathematical background, one can refer itself to [these notes](https://a
 
 To learn how to use this package, you can open the GettingStarted.mlx file.
 
+To view this toolbox on the Matlab file exchange : [![View DivisorsOnMetricGraphs on File Exchange :](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://nl.mathworks.com/matlabcentral/fileexchange/136584-divisorsonmetricgraphs).
+
 If you have any bug report, remark or suggestions, you can e-mail me at thomas DOT saillez AT ulb DOT be.
 
 I would like to thank Yoav Len for introducing me to the subject of divisors on metric graphs. I would like to thank Špela Špenko for her advices and boosts of motivation.
