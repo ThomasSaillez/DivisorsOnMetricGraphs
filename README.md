@@ -5,7 +5,9 @@ Dhar's algorithm and the computation of the euclidean distance of a divisor are 
 
 For the mathematical background, one can refer itself to [these notes](https://arxiv.org/abs/2210.14060).
 
-To learn hot to use this package, you can open the GettingStarted.mlx file.
+To learn how to use this package, you can open the GettingStarted.mlx file.
+
+To view this toolbox on the Matlab file exchange : [![View DivisorsOnMetricGraphs on File Exchange :](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://nl.mathworks.com/matlabcentral/fileexchange/136584-divisorsonmetricgraphs).
 
 If you have any bug report, remark or suggestions, you can e-mail me at thomas DOT saillez AT ulb DOT be.
 
