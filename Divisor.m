@@ -18,9 +18,6 @@ classdef Divisor < handle
 
     properties (Access = protected)
         metricGraph
-    end
-
-    properties
         edgeIndexVector
         distanceVector
         degreeVector
@@ -43,11 +40,11 @@ classdef Divisor < handle
                 interiorLengths = obj.getInteriorDistance(i, false);
                 switch width(interiorLengths)
                     case 0
-                        segmentLengths = [segmentLengths obj.metricGraph.lengths(i)]; %#ok
+                        segmentLengths = [segmentLengths obj.metricGraph.getLength(i)]; %#ok
                     case 1
-                        segmentLengths = [segmentLengths interiorLengths(1) obj.metricGraph.lengths(i)-interiorLengths(end)]; %#ok
+                        segmentLengths = [segmentLengths interiorLengths(1) obj.metricGraph.getLength(i) - interiorLengths(end)]; %#ok
                     otherwise
-                        segmentLengths = [segmentLengths interiorLengths(1) diff(interiorLengths) obj.metricGraph.lengths(i)-interiorLengths(end)]; %#ok
+                        segmentLengths = [segmentLengths interiorLengths(1) diff(interiorLengths) obj.metricGraph.getLength(i) - interiorLengths(end)]; %#ok
                 end    
                 supportVector(i) = width(interiorLengths) + 1;
             end    
@@ -171,11 +168,11 @@ classdef Divisor < handle
             if distanceFromTail < 0
                 error('The distance from the tail has to be positive. Given distance is %d.', distanceFromTail)
             end
-            if distanceFromTail > obj.metricGraph.lengths(edgeIndex)
-                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.lengths(edgeIndex))
+            if distanceFromTail > obj.metricGraph.getLength(edgeIndex)
+                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.getLength(edgeIndex))
             end
             obj.degreeVector = [obj.degreeVector degree];
-            obj.distanceVector = [obj.distanceVector [distanceFromTail; obj.metricGraph.lengths(edgeIndex)-distanceFromTail]];
+            obj.distanceVector = [obj.distanceVector [distanceFromTail; obj.metricGraph.getLength(edgeIndex) - distanceFromTail]];
             obj.edgeIndexVector = [obj.edgeIndexVector edgeIndex];
        end
 
@@ -190,7 +187,7 @@ classdef Divisor < handle
            if towardsHead
                if isempty(chipsOnEdge)
                    distanceFromEnd = 0;
-                   distance = obj.metricGraph.lengths(edgeIndex);
+                   distance = obj.metricGraph.getLength(edgeIndex);
                else    
                    positionOfPoint = find(length >= obj.distanceVector(1, chipsOnEdge), 1, "last");
                    if width(positionOfPoint) ~= 0
@@ -199,7 +196,7 @@ classdef Divisor < handle
                             distanceFromEnd = obj.distanceVector(2, chipsOnEdge(positionOfPoint + 1));
                         else
                             distanceFromEnd = 0;
-                            distance = obj.metricGraph.lengths(edgeIndex);
+                            distance = obj.metricGraph.getLength(edgeIndex);
                         end
                    else
                         distance = obj.distanceVector(1, chipsOnEdge(1));
@@ -209,7 +206,7 @@ classdef Divisor < handle
            else
                if isempty(chipsOnEdge)
                    distance = 0;
-                   distanceFromEnd = obj.metricGraph.lengths(edgeIndex);
+                   distanceFromEnd = obj.metricGraph.getLength(edgeIndex);
                else 
                     positionOfPoint = find(length <= obj.distanceVector(1, chipsOnEdge),1,"first");
                     if width(positionOfPoint) ~= 0
@@ -218,7 +215,7 @@ classdef Divisor < handle
                             distanceFromEnd = obj.distanceVector(2, chipsOnEdge(positionOfPoint - 1));
                         else
                             distance = 0;
-                            distanceFromEnd =  obj.metricGraph.lengths(edgeIndex);
+                            distanceFromEnd =  obj.metricGraph.getLength(edgeIndex);
                         end
                     else   
                         distance = obj.distanceVector(1, chipsOnEdge(width(chipsOnEdge)));
@@ -289,8 +286,8 @@ classdef Divisor < handle
             if distanceFromTail < 0
                 error('The distance from the tail has to be positive. Given distance is %d.', distanceFromTail)
             end
-            if distanceFromTail > obj.metricGraph.lengths(edgeIndex)
-                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.lengths(edgeIndex))
+            if distanceFromTail > obj.metricGraph.getLength(edgeIndex)
+                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.getLength(edgeIndex))
             end
             addChipPrivate(obj, edgeIndex, distanceFromTail, degree);
             reduceVectors(obj);
@@ -461,13 +458,13 @@ classdef Divisor < handle
             if distance(1) < 0
                 error('The distance from the tail has to be positive. Given distance is %d.', distanceFromTail)
             end
-            if distance(1) > obj.metricGraph.lengths(edgeIndex)
-                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.lengths(edgeIndex))
+            if distance(1) > obj.metricGraph.getLength(edgeIndex)
+                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.getLength(edgeIndex))
             end
 
             degree = 0;
             if height(distance) == 1
-                distance = [distance ; obj.metricGraph.lengths(edgeIndex)-distance];
+                distance = [distance ; obj.metricGraph.getLength(edgeIndex)-distance];
             end    
             [edgeIndex, distance] = obj.metricGraph.reducePosition(edgeIndex, distance);
             matchingEdge = find(obj.edgeIndexVector == edgeIndex);
@@ -493,31 +490,31 @@ classdef Divisor < handle
             if distance(1) < 0
                 error('The distance from the tail has to be positive. Given distance is %d.', distanceFromTail)
             end
-            if distance(1) > obj.metricGraph.lengths(edgeIndex)
-                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.lengths(edgeIndex))
+            if distance(1) > obj.metricGraph.getLength(edgeIndex)
+                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.getLength(edgeIndex))
             end
 
             if height(distance) == 1
-                distance = [distance ; obj.metricGraph.lengths(edgeIndex)-distance];
+                distance = [distance ; obj.metricGraph.getLength(edgeIndex)-distance];
             end
             toExplore = zeros(0);
             if distance(1) == 0
                 listOfIncidents = obj.metricGraph.getIncidents(obj.metricGraph.getTail(edgeIndex));
                 for i = 1:width(listOfIncidents)
-                    if obj.metricGraph.incidenceMatrix(obj.metricGraph.getTail(edgeIndex),listOfIncidents(i))==-1
+                    if obj.metricGraph.getIncidenceMatrix(obj.metricGraph.getTail(edgeIndex), listOfIncidents(i))==-1
                         D = exploreSegment(obj, listOfIncidents(i), 0, true);
                     else
-                        D = exploreSegment(obj, listOfIncidents(i), obj.metricGraph.lengths(listOfIncidents(i)), false);
+                        D = exploreSegment(obj, listOfIncidents(i), obj.metricGraph.getLength(listOfIncidents(i)), false);
                     end    
                     toExplore = [toExplore clone(D)];%#ok
                 end
             elseif distance(2) == 0
                 listOfIncidents = obj.metricGraph.getIncidents(obj.metricGraph.getHead(edgeIndex));
                 for i = 1:width(listOfIncidents)
-                    if obj.metricGraph.incidenceMatrix(obj.metricGraph.getHead(edgeIndex),listOfIncidents(i))==-1
+                    if obj.metricGraph.getIncidenceMatrix(obj.metricGraph.getHead(edgeIndex),listOfIncidents(i))==-1
                         D = exploreSegment(obj, listOfIncidents(i), 0, true);
                     else
-                        D = exploreSegment(obj, listOfIncidents(i), obj.metricGraph.lengths(listOfIncidents(i)), false);
+                        D = exploreSegment(obj, listOfIncidents(i), obj.metricGraph.getLength(listOfIncidents(i)), false);
                     end    
                     toExplore = [toExplore clone(D)];%#ok
                 end
@@ -561,12 +558,12 @@ classdef Divisor < handle
             if distance(1) < 0
                 error('The distance from the tail has to be positive. Given distance is %d.', distanceFromTail)
             end
-            if distance(1) > obj.metricGraph.lengths(edgeIndex)
-                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.lengths(edgeIndex))
+            if distance(1) > obj.metricGraph.getLength(edgeIndex)
+                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.getLength(edgeIndex))
             end
 
             if height(distance) == 1
-                distance = [distance; obj.metricGraph.lengths(edgeIndex) - distance];
+                distance = [distance; obj.metricGraph.getLength(edgeIndex) - distance];
             end
             [edgeIndex, distance] = reducePosition(obj.metricGraph,edgeIndex, distance);
             % We have three arrays for Dhar's algorithm. We call segment
@@ -577,17 +574,15 @@ classdef Divisor < handle
             % explored). The last array "toFire" contains the oriented segments that
             % stopped "Dhar's fire".
           
-            obj.addChip(edgeIndex,distance(1),1)
-            %pause(3)
+            obj.addChip(edgeIndex, distance(1), 1)
             while true
                 doNotExplore = zeros(0);
-                toFire = zeros(0);
                 toFireAsDiv = Divisor(obj.metricGraph);
                 toExplore = obj.leavingSegments(edgeIndex, distance);
                 while width(toExplore) ~= 0
                     doNotExplore = [doNotExplore toExplore(1)]; %#ok
                     [edgeExplored, distanceExplored] = toExplore(1).getEnd;
-                    if toFireAsDiv.degreeOfPoint(edgeExplored,distanceExplored) == -obj.degreeOfPoint(edgeExplored,distanceExplored) || obj.degreeOfPoint(edgeExplored,distanceExplored) == 0
+                    if toFireAsDiv.degreeOfPoint(edgeExplored, distanceExplored) == -obj.degreeOfPoint(edgeExplored, distanceExplored) || obj.degreeOfPoint(edgeExplored,distanceExplored) == 0
                         if width(toExplore) >= 2
                             [endExploredEdge, endExploredDistance] = toExplore(1).getEnd;
                             for j = width(toExplore):-1:2
@@ -604,6 +599,10 @@ classdef Divisor < handle
                             for j = 1:width(doNotExplore)
                                 if areSameUnoriented(doNotExplore(j), toBeChecked(k), obj.metricGraph)
                                     isNotExplored = false;
+                                    invert(doNotExplore(j))
+                                    toUnfireAsDiv = turnToDivisor(doNotExplore(j), obj.metricGraph);
+                                    toFireAsDiv = addition(toFireAsDiv, toUnfireAsDiv);
+                                    delete(toUnfireAsDiv);
                                     doNotExplore(j) = []; %A segment can only be reached twice
                                     break
                                 end   
@@ -620,24 +619,9 @@ classdef Divisor < handle
                             if isNotExplored
                                toExplore = [toExplore toBeChecked(k)];%#ok
                             end 
-                        end
-                        if width(toFire) ~= 0
-                            [edgeExplored, distanceExplored] = obj.metricGraph.reducePosition(edgeExplored, distanceExplored);
-                            for k = width(toFire):-1:1
-                                [edgeOfFiring, pointOfFiring] = getStart(toFire(k));
-                                [edgeOfFiring, pointOfFiring] = obj.metricGraph.reducePosition(edgeOfFiring,pointOfFiring);
-                                if edgeOfFiring == edgeExplored && all(pointOfFiring == distanceExplored)
-                                    invert(toFire(k))
-                                    toUnfireAsDiv = turnToDivisor(toFire(k), obj.metricGraph);
-                                    toFireAsDiv = addition(toFireAsDiv, toUnfireAsDiv);
-                                    delete(toUnfireAsDiv);
-                                    toFire(k) = [];
-                                end    
-                            end    
-                        end    
+                        end   
                     else
                         invert(toExplore(1));
-                        toFire = [toFire toExplore(1)];%#ok
                         toExploreAsDiv = turnToDivisor(toExplore(1), obj.metricGraph);
                         result = addition(toFireAsDiv, toExploreAsDiv);
                         toFireAsDiv.degreeVector = result.degreeVector;
@@ -648,18 +632,18 @@ classdef Divisor < handle
                     end
                     toExplore(1)=[];
                 end
-                if width(toFire) == 0
+                if width(doNotExplore) == 0
                     break
                 else    
                     delete(toFireAsDiv)
-                    firingLength = zeros(1,width(toFire));
-                    for i = 1:width(toFire)
-                        firingLength(i) = lengthToStop(toFire(i), edgeIndex, distance);
+                    firingLength = zeros(1,width(doNotExplore));
+                    for i = 1:width(doNotExplore)
+                        firingLength(i) = lengthToStop(doNotExplore(i), edgeIndex, distance);
                     end
                     divisorToAdd = Divisor(obj.metricGraph);
-                    for i = 1:width(toFire)
-                        changeLengthTo(toFire(i), min(firingLength));
-                        divisorToAdd = addition(divisorToAdd, turnToDivisor(toFire(i),obj.metricGraph));
+                    for i = 1:width(doNotExplore)
+                        changeLengthTo(doNotExplore(i), min(firingLength));
+                        divisorToAdd = addition(divisorToAdd, turnToDivisor(doNotExplore(i),obj.metricGraph));
                     end
                     result = addition(obj, divisorToAdd);
                     obj.degreeVector = result.degreeVector;
@@ -704,8 +688,8 @@ classdef Divisor < handle
             plot(obj.metricGraph, X, Y)
             hold on;
             for i = 1:width(obj.degreeVector)
-                fromVertex = find(obj.metricGraph.incidenceMatrix(:,obj.edgeIndexVector(i)) == -1);
-                toVertex = find(obj.metricGraph.incidenceMatrix(:,obj.edgeIndexVector(i)) == 1);
+                fromVertex = find(obj.metricGraph.getIncidenceMatrix(':', obj.edgeIndexVector(i)) == -1);
+                toVertex = find(obj.metricGraph.getIncidenceMatrix(':', obj.edgeIndexVector(i)) == 1);
                 proportion = obj.distanceVector(1,i)/sum(obj.distanceVector(:,i));
                 XCoordinate = X(fromVertex) + proportion*(X(toVertex)-X(fromVertex));
                 YCoordinate = Y(fromVertex) + proportion*(Y(toVertex)-Y(fromVertex));
@@ -751,8 +735,8 @@ classdef Divisor < handle
             tikzPlot(obj.metricGraph, X, Y, false)
             fileID = fopen("output.txt",'a+');
             for i = 1:width(obj.degreeVector)
-                fromVertex = find(obj.metricGraph.incidenceMatrix(:,obj.edgeIndexVector(i)) == -1);
-                toVertex = find(obj.metricGraph.incidenceMatrix(:,obj.edgeIndexVector(i)) == 1);
+                fromVertex = find(obj.metricGraph.getIncidenceMatrix(':',obj.edgeIndexVector(i)) == -1);
+                toVertex = find(obj.metricGraph.getIncidenceMatrix(':',obj.edgeIndexVector(i)) == 1);
                 proportion = obj.distanceVector(1,i)/sum(obj.distanceVector(:,i));
                 coordinateX = X(fromVertex) + proportion*(X(toVertex)-X(fromVertex));
                 coordinateY = Y(fromVertex) + proportion*(Y(toVertex)-Y(fromVertex));

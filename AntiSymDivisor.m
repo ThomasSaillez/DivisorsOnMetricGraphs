@@ -37,8 +37,8 @@ classdef AntiSymDivisor < handle & Divisor
             if distanceFromTail < 0
                 error('The distance from the tail has to be positive. Given distance is %d.', distanceFromTail)
             end
-            if distanceFromTail > obj.metricGraph.lengths(edgeIndex)
-                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.lengths(edgeIndex))
+            if distanceFromTail > obj.metricGraph.getLength(edgeIndex)
+                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, obj.metricGraph.getLength(edgeIndex))
             end
             addChipPrivate(obj, edgeIndex, distanceFromTail, degree);
             [edgeIndex, distanceFromTail] = obj.metricGraph.involution(edgeIndex, distanceFromTail);

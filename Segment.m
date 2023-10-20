@@ -21,8 +21,8 @@ classdef Segment < handle
     
     methods (Access = private)
         function addChip(obj, metricGraph, edgeIndex, distanceFromTail, degree)
-            if edgeIndex > width(metricGraph.lengths)
-                error('The edge index has to be lower than the number of edges of the graph. The given index is %d while the number of edges is %d.',edgeIndex, width(metricGraph.lengths))
+            if edgeIndex > metricGraph.getNumEdges
+                error('The edge index has to be lower than the number of edges of the graph. The given index is %d while the number of edges is %d.', edgeIndex, metricGraph.getNumEdges)
             end    
             if edgeIndex < 1
                 error('The edge index has to be strictly positive. The given index is %d.', edgeIndex)
@@ -30,11 +30,11 @@ classdef Segment < handle
             if distanceFromTail < 0
                 error('The distance from the tail has to be positive. Given distance is %d.', distanceFromTail)
             end
-            if distanceFromTail > metricGraph.lengths(edgeIndex)
-                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, metricGraph.lengths(edgeIndex))
+            if distanceFromTail > metricGraph.getLength(edgeIndex)
+                error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTail, metricGraph.getLength(edgeIndex))
             end
             obj.degreeVector = [obj.degreeVector degree];
-            obj.distanceVector = [obj.distanceVector [distanceFromTail; metricGraph.lengths(edgeIndex)-distanceFromTail]];
+            obj.distanceVector = [obj.distanceVector [distanceFromTail; metricGraph.getLength(edgeIndex)-distanceFromTail]];
             obj.edgeIndexVector = [obj.edgeIndexVector edgeIndex];
         end
 
@@ -71,8 +71,8 @@ classdef Segment < handle
             % See also Divisor, MetricGraph.
 
             if nargin ~=0
-                if edgeIndex > width(metricGraph.lengths)
-                    error('The edge index has to be lower than the number of edges of the graph. The given index is %d while the number of edges is %d.',edgeIndex, width(metricGraph.lengths))
+                if edgeIndex > metricGraph.getNumEdges
+                    error('The edge index has to be lower than the number of edges of the graph. The given index is %d while the number of edges is %d.',edgeIndex, metricGraph.getNumEdges)
                 end    
                 if edgeIndex < 1
                     error('The edge index has to be strictly positive. The given index is %d.', edgeIndex)
@@ -80,14 +80,14 @@ classdef Segment < handle
                 if distanceFromTailStart < 0
                     error('The distance from the tail has to be positive. Given distance is %d.', distanceFromTailStart)
                 end
-                if distanceFromTailStart > metricGraph.lengths(edgeIndex)
-                    error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTailStart, metricGraph.lengths(edgeIndex))
+                if distanceFromTailStart > metricGraph.getLength(edgeIndex)
+                    error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTailStart, metricGraph.getLength(edgeIndex))
                 end
                 if distanceFromTailEnd < 0
                     error('The distance from the tail has to be positive. Given distance is %d.', distanceFromTailEnd)
                 end
-                if distanceFromTailEnd > metricGraph.lengths(edgeIndex)
-                    error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTailEnd, metricGraph.lengths(edgeIndex))
+                if distanceFromTailEnd > metricGraph.getLength(edgeIndex)
+                    error('The distance from the tail has to be lower than the length of the edge. Given distance is %d while the edge has length %d.', distanceFromTailEnd, metricGraph.getLength(edgeIndex))
                 end
             end
             obj.edgeIndexVector = zeros(1,0);
@@ -114,8 +114,8 @@ classdef Segment < handle
             if ~isa(metricGraph, 'MetricGraph')
                 error('The input has to be a metric graph, the input class is %s.', class(metricGraph))
             end
-            if edgeIndex > width(metricGraph.incidenceMatrix)
-                error('You cannot have an edge index larger than the number of edges on the graph. Given index is %d while the number of edges is %d.', edgeIndex, width(metricGraph.incidenceMatrix))
+            if edgeIndex > metricGraph.getNumEdges
+                error('You cannot have an edge index larger than the number of edges on the graph. Given index is %d while the number of edges is %d.', edgeIndex, metricGraph.getNumEdges)
             end
             if edgeIndex < 1 
                 error('You cannot have an edge index strictly smaller than 1. Given index is %d.', edgeIndex)

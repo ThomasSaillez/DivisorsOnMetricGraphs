@@ -19,7 +19,7 @@ classdef MetricGraph < handle
         numVertices
     end
 
-    properties
+    properties (Access = protected)
         incidenceMatrix
         lengths
     end
@@ -85,8 +85,9 @@ classdef MetricGraph < handle
             % myGraph.getLength(n) will output the length of the n-th edge
             % of the graph myGraph.
             %
-            % myGraph.getLength('all') will output all the lengths ins
-            if numEdge == 'all' %#ok
+            % myGraph.getLength will output all the lengths.
+
+            if nargin == 1
                 length = obj.lengths;
             else
                 if numEdge > obj.getNumEdges
@@ -190,7 +191,7 @@ classdef MetricGraph < handle
             
             numEdges = width(obj.lengths);
         end
-        
+
         function tailNumber = getTail(obj, edgeNumber)
             % myGraph.getTail(n) outputs the number of the vertex which is
             % at the start of the n-th edge.
@@ -548,16 +549,22 @@ classdef MetricGraph < handle
             end    
         end
 
-        function matrix = getIncidenceMatrix(obj)
+        function matrix = getIncidenceMatrix(obj, row, col)
             % myGraph.getIncidenceMatrix outputs the incidence matrix of
             % the graph myGraph. Column number n contains -1 at the index
             % of the vertex where the n-th edge starts and 1 at the index
             % of the vertex where the n-th edge ends.
             %
+            % myGraph.getIncidenceMatrix(A, B) the entry (A, B) of the
+            % incidence matrix.
+            %
             % See also getAdjacencyMatrix, getAdjacencyMatrixDir,
             % getLaplacianMatrix.
-
-            matrix = obj.incidenceMatrix;
+            if nargin == 3
+                matrix = obj.incidenceMatrix(row, col);
+            else
+                matrix = obj.incidenceMatrix;
+            end    
         end
 
         function [X, Y] = getLaplacianCoordinates(obj, scaleFactor)

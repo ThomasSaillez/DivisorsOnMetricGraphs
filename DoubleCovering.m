@@ -32,7 +32,7 @@ classdef DoubleCovering < MetricGraph & handle
             obj@MetricGraph(numVertices);
             obj.baseGraph = metricGraph;            
             obj.incidenceMatrix = [metricGraph.getIncidenceMatrix zeros(metricGraph.getNumVertices, metricGraph.getNumEdges);zeros(metricGraph.getNumVertices, metricGraph.getNumEdges) metricGraph.getIncidenceMatrix];
-            obj.lengths = [metricGraph.getLength('all') metricGraph.getLength('all')];
+            obj.lengths = [metricGraph.getLength metricGraph.getLength];
             obj.isCrossing = false(metricGraph.getNumVertices, 1);
         end
         
