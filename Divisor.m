@@ -33,90 +33,6 @@ classdef Divisor < handle
     end
 
     methods (Access = protected)
-        function [slopeVector, segmentLengths] = functionFromDivisor(obj)
-        supportVector = ones(1,obj.metricGraph.getNumEdges);
-            segmentLengths = [];
-            for i = 1:obj.metricGraph.getNumEdges
-                interiorLengths = obj.getInteriorDistance(i, false);
-                switch width(interiorLengths)
-                    case 0
-                        segmentLengths = [segmentLengths obj.metricGraph.getLength(i)]; %#ok
-                    case 1
-                        segmentLengths = [segmentLengths interiorLengths(1) obj.metricGraph.getLength(i) - interiorLengths(end)]; %#ok
-                    otherwise
-                        segmentLengths = [segmentLengths interiorLengths(1) diff(interiorLengths) obj.metricGraph.getLength(i) - interiorLengths(end)]; %#ok
-                end    
-                supportVector(i) = width(interiorLengths) + 1;
-            end    
-            matrixDimension = sum(supportVector);
-            segmentToEdge = zeros(1, matrixDimension);
-            pointerBis = 1;
-            for i = 1:obj.metricGraph.getNumEdges
-                segmentToEdge(pointerBis:pointerBis + supportVector(i)-1) = i;
-                pointerBis = pointerBis + supportVector(i);
-            end
-            pointer = 1;
-            slopeSystemMatrix = zeros(matrixDimension);
-            slopeSystemVector = zeros(matrixDimension,1);
-            pathMatrix = zeros(obj.metricGraph.getNumVertices, obj.metricGraph.getNumEdges);
-            toExplore = obj.metricGraph.getIncidents(1);
-            toExploreOrigins = ones(1,width(toExplore));
-            explored = toExplore;
-            while width(toExplore) ~= 0
-                currentVertex = obj.metricGraph.getOtherVertex(toExplore(1), toExploreOrigins(1));
-                listOfAdjacents = obj.metricGraph.getIncidents(currentVertex);
-                listOfAdjacents = setdiff(listOfAdjacents, intersect(listOfAdjacents, explored));
-                toExplore = [toExplore listOfAdjacents]; %#ok
-                explored = [explored listOfAdjacents]; %#ok
-                toExploreOrigins = [toExploreOrigins currentVertex*ones(1,width(listOfAdjacents))]; %#ok               
-                % The next if will add the information about the vertex to
-                % our matrices containing the paths.
-                if any(pathMatrix(currentVertex,:))
-                    loopExplored = pathMatrix(toExploreOrigins(1),:) - pathMatrix(currentVertex,:);
-                    if obj.metricGraph.getTail(toExplore(1)) == toExploreOrigins(1)
-                        loopExplored(toExplore(1)) = 1;
-                    else
-                        loopExplored(toExplore(1)) = -1;
-                    end
-                    slopeSystemMatrix(pointer, :) = Divisor.turnToSegments(loopExplored, segmentToEdge, segmentLengths);
-                    pointer = pointer + 1;
-                else
-                    pathMatrix(currentVertex,:) = pathMatrix(toExploreOrigins(1),:);
-                    if obj.metricGraph.getTail(toExplore(1)) == toExploreOrigins(1)
-                        pathMatrix(currentVertex, toExplore(1)) = 1;
-                    else
-                        pathMatrix(currentVertex, toExplore(1)) = -1;
-                    end    
-                end
-                toExplore(1) = [];
-                toExploreOrigins(1) = [];
-            end
-            for i = 1:obj.metricGraph.getNumVertices - 1
-                [edge, distance] = obj.metricGraph.vertexToPoint(i);
-                slopeSystemVector(pointer) = obj.degreeOfPoint(edge, distance);
-                headIncidents = obj.metricGraph.getHeadIncidents(i);
-                for j = 1:width(headIncidents)
-                    slopeSystemMatrix(pointer, find(segmentToEdge == headIncidents(j),1,"last")) = 1;
-                end
-                tailIncidents = obj.metricGraph.getTailIncidents(i);
-                for j = 1:width(tailIncidents)
-                    slopeSystemMatrix(pointer, find(segmentToEdge == tailIncidents(j),1,"first")) = -1;
-                end 
-                pointer = pointer + 1;
-            end
-            for i = 1:obj.metricGraph.getNumEdges
-                interiorLengths = obj.getInteriorDistance(i, false);
-                startPosition = find(segmentToEdge == i, 1) - 1;
-                for j = 1:width(interiorLengths)
-                    slopeSystemMatrix(pointer, startPosition + j) = 1; 
-                    slopeSystemMatrix(pointer, startPosition + j + 1) = -1;
-                    slopeSystemVector(pointer) = obj.degreeOfPoint(i,interiorLengths(j));
-                    pointer = pointer + 1;
-                end    
-            end
-            slopeVector = linsolve (slopeSystemMatrix, slopeSystemVector);
-        end
-
         function reduceVectors(obj)
             % This function will shorten the three vectors of the chip state
             % in a unique reduced way
@@ -565,14 +481,12 @@ classdef Divisor < handle
             if height(distance) == 1
                 distance = [distance; obj.metricGraph.getLength(edgeIndex) - distance];
             end
-            [edgeIndex, distance] = reducePosition(obj.metricGraph,edgeIndex, distance);
-            % We have three arrays for Dhar's algorithm. We call segment
+            [edgeIndex, distance] = reducePosition(obj.metricGraph, edgeIndex, distance);
+            % We have two arrays for Dhar's algorithm. We call segment
             % a minimal subset of an edge bounded by points of the divisors
             % and/or vertices. The first array "toExplore" contains the oriented segments we are
-            % about to explore. The second array "doNotExplore" contains the segments that
-            % we have already excluded (either by elimination or already
-            % explored). The last array "toFire" contains the oriented segments that
-            % stopped "Dhar's fire".
+            % about to explore. The second "toFire" contains the oriented segments that
+            % stopped "Dhar's fire", and is used to know which segment should not be explored.
           
             obj.addChip(edgeIndex, distance(1), 1)
             while true
@@ -651,14 +565,14 @@ classdef Divisor < handle
                     obj.edgeIndexVector = result.edgeIndexVector;
                     delete(result)
                     if nargin >= 5
-                        obj.addChip(edgeIndex,distance(1),-1)
+                        obj.addChip(edgeIndex, distance(1), -1)
                         if outputVisual
                             obj.plot(X, Y)
                             pause(1)
                         else
                             obj.tikzPlot(X, Y)
                         end    
-                        obj.addChip(edgeIndex,distance(1),1)
+                        obj.addChip(edgeIndex, distance(1), 1)
                     end
                 end    
             end
@@ -791,6 +705,100 @@ classdef Divisor < handle
             else
                 areEquivalent = false;
             end    
-        end    
+        end
+
+        function [slopeVector, segmentLengths] = functionFromDivisor(obj)
+            % myDivisor.functionFromDivisor outputs the vector containing
+            % all the slopes that a function would have if it was a
+            % principal divisor. Slopes are oriented the same way as the
+            % edges they lie in and are ordered from first edge to last
+            % edge from the start of an edge to its end.
+            
+
+            if obj.degreeOfDivisor ~= 0
+                error('The input divisor has degree nonzero, given degree is %i.', obj.degreeOfDivisor)
+            end    
+            supportVector = ones(1,obj.metricGraph.getNumEdges);
+            segmentLengths = [];
+            for i = 1:obj.metricGraph.getNumEdges
+                interiorLengths = obj.getInteriorDistance(i, false);
+                switch width(interiorLengths)
+                    case 0
+                        segmentLengths = [segmentLengths obj.metricGraph.getLength(i)]; %#ok
+                    case 1
+                        segmentLengths = [segmentLengths interiorLengths(1) obj.metricGraph.getLength(i) - interiorLengths(end)]; %#ok
+                    otherwise
+                        segmentLengths = [segmentLengths interiorLengths(1) diff(interiorLengths) obj.metricGraph.getLength(i) - interiorLengths(end)]; %#ok
+                end    
+                supportVector(i) = width(interiorLengths) + 1;
+            end    
+            matrixDimension = sum(supportVector);
+            segmentToEdge = zeros(1, matrixDimension);
+            pointerBis = 1;
+            for i = 1:obj.metricGraph.getNumEdges
+                segmentToEdge(pointerBis:pointerBis + supportVector(i)-1) = i;
+                pointerBis = pointerBis + supportVector(i);
+            end
+            pointer = 1;
+            slopeSystemMatrix = zeros(matrixDimension);
+            slopeSystemVector = zeros(matrixDimension,1);
+            pathMatrix = zeros(obj.metricGraph.getNumVertices, obj.metricGraph.getNumEdges);
+            toExplore = obj.metricGraph.getIncidents(1);
+            toExploreOrigins = ones(1,width(toExplore));
+            explored = toExplore;
+            while width(toExplore) ~= 0
+                currentVertex = obj.metricGraph.getOtherVertex(toExplore(1), toExploreOrigins(1));
+                listOfAdjacents = obj.metricGraph.getIncidents(currentVertex);
+                listOfAdjacents = setdiff(listOfAdjacents, intersect(listOfAdjacents, explored));
+                toExplore = [toExplore listOfAdjacents]; %#ok
+                explored = [explored listOfAdjacents]; %#ok
+                toExploreOrigins = [toExploreOrigins currentVertex*ones(1,width(listOfAdjacents))]; %#ok               
+                % The next if will add the information about the vertex to
+                % our matrices containing the paths.
+                if any(pathMatrix(currentVertex,:))
+                    loopExplored = pathMatrix(toExploreOrigins(1),:) - pathMatrix(currentVertex,:);
+                    if obj.metricGraph.getTail(toExplore(1)) == toExploreOrigins(1)
+                        loopExplored(toExplore(1)) = 1;
+                    else
+                        loopExplored(toExplore(1)) = -1;
+                    end
+                    slopeSystemMatrix(pointer, :) = Divisor.turnToSegments(loopExplored, segmentToEdge, segmentLengths);
+                    pointer = pointer + 1;
+                else
+                    pathMatrix(currentVertex,:) = pathMatrix(toExploreOrigins(1),:);
+                    if obj.metricGraph.getTail(toExplore(1)) == toExploreOrigins(1)
+                        pathMatrix(currentVertex, toExplore(1)) = 1;
+                    else
+                        pathMatrix(currentVertex, toExplore(1)) = -1;
+                    end    
+                end
+                toExplore(1) = [];
+                toExploreOrigins(1) = [];
+            end
+            for i = 1:obj.metricGraph.getNumVertices - 1
+                [edge, distance] = obj.metricGraph.vertexToPoint(i);
+                slopeSystemVector(pointer) = obj.degreeOfPoint(edge, distance);
+                headIncidents = obj.metricGraph.getHeadIncidents(i);
+                for j = 1:width(headIncidents)
+                    slopeSystemMatrix(pointer, find(segmentToEdge == headIncidents(j),1,"last")) = 1;
+                end
+                tailIncidents = obj.metricGraph.getTailIncidents(i);
+                for j = 1:width(tailIncidents)
+                    slopeSystemMatrix(pointer, find(segmentToEdge == tailIncidents(j),1,"first")) = -1;
+                end 
+                pointer = pointer + 1;
+            end
+            for i = 1:obj.metricGraph.getNumEdges
+                interiorLengths = obj.getInteriorDistance(i, false);
+                startPosition = find(segmentToEdge == i, 1) - 1;
+                for j = 1:width(interiorLengths)
+                    slopeSystemMatrix(pointer, startPosition + j) = 1; 
+                    slopeSystemMatrix(pointer, startPosition + j + 1) = -1;
+                    slopeSystemVector(pointer) = obj.degreeOfPoint(i,interiorLengths(j));
+                    pointer = pointer + 1;
+                end    
+            end
+            slopeVector = linsolve (slopeSystemMatrix, slopeSystemVector);
+        end
     end
 end

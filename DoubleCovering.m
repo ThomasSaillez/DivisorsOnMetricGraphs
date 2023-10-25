@@ -13,7 +13,7 @@ classdef DoubleCovering < MetricGraph & handle
     properties (Access = private)
         baseGraph
     end
-    properties
+    properties (Access = protected)
         isCrossing
     end
     methods
@@ -34,6 +34,10 @@ classdef DoubleCovering < MetricGraph & handle
             obj.incidenceMatrix = [metricGraph.getIncidenceMatrix zeros(metricGraph.getNumVertices, metricGraph.getNumEdges);zeros(metricGraph.getNumVertices, metricGraph.getNumEdges) metricGraph.getIncidenceMatrix];
             obj.lengths = [metricGraph.getLength metricGraph.getLength];
             obj.isCrossing = false(metricGraph.getNumVertices, 1);
+            obj.isKnownConnected = true;
+            obj.computedConnected = false;
+            obj.isKnownMultigraph = metricGraph.isKnownMultigraph;
+            obj.computedMultigraph = metricGraph.computedMultigraph;
         end
         
         function numVertices = getHalfNumVertices(obj)
@@ -73,6 +77,8 @@ classdef DoubleCovering < MetricGraph & handle
             if edgeNumber < 1
                error('The edge number cannot be smaller than 1. The given number is %d.', edgeNumber)
             end
+            obj.isKnownConnected = false;
+            obj.isKnownMultigraph = false;
             if edgeNumber > obj.getHalfNumEdges
                 edgeNumber = edgeNumber - obj.getHalfNumEdges;
             end
@@ -92,7 +98,15 @@ classdef DoubleCovering < MetricGraph & handle
             % copy of the base graph.
             %
             % See also makeEdgeCross.
-            
+
+            if edgeNumber > obj.getNumEdges
+                error('The edge number cannot be larger than the number of edges. The given number is %d.', edgeNumber)
+            end  
+            if edgeNumber < 1
+               error('The edge number cannot be smaller than 1. The given number is %d.', edgeNumber)
+            end
+            obj.isKnownMultigraph = false;
+            obj.isKnownConnected = false;
             if obj.isCrossing(edgeNumber)
                 obj.isCrossing(edgeNumber) = false;
                 vertex = find(obj.incidenceMatrix(:, edgeNumber + obj.getHalfNumEdges) == 1);
@@ -124,9 +138,13 @@ classdef DoubleCovering < MetricGraph & handle
         function metricGraph = forgetCovering(obj)
             % myCover.forgetCovering outputs myCover has a MetricGraph.
 
-            metricGraph = MetricGraph(obj.numVertices);
+            metricGraph = MetricGraph(obj.getNumVertices);
             metricGraph.incidenceMatrix = obj.incidenceMatrix;
             metricGraph.lengths = obj.lengths;
+            metricGraph.isKnownConnected = obj.isKnownConnected;
+            metricGraph.computedConnected = obj.computedConnected;
+            metricGraph.isKnownMultigraph = obj.isKnownMultigraph;
+            metricGraph.computedMultigraph = obj.computedMultigraph;
         end
 
         function [edgeIndex, distance] = involution(obj, edgeIndex, distance)
@@ -199,6 +217,11 @@ classdef DoubleCovering < MetricGraph & handle
            cloned.incidenceMatrix = obj.incidenceMatrix;
            cloned.lengths = obj.lengths;
            cloned.isCrossing = obj.isCrossing;
+           cloned.isKnownConnected = obj.isKnownConnected;
+           cloned.computedConnected = obj.computedConnected;
+           cloned.isKnownLaplacianCoordinates = obj.isKnownLaplacianCoordinates;
+           cloned.computedLaplacianCoordinatesX = obj.computedLaplacianCoordinatesX;
+           cloned.computedLaplacianCoordinatesY = obj.computedLaplacianCoordinatesY;
        end
     end
 end    

@@ -22,6 +22,13 @@ classdef MetricGraph < handle
     properties (Access = protected)
         incidenceMatrix
         lengths
+        computedConnected
+        isKnownConnected
+        computedMultigraph
+        isKnownMultigraph
+        computedLaplacianCoordinatesX
+        computedLaplacianCoordinatesY
+        isKnownLaplacianCoordinates
     end
 
     methods
@@ -36,6 +43,11 @@ classdef MetricGraph < handle
             if numVertices <= 0
                 error('The number of vertices has to be at least 1. The given number is %d.',numVertices)
             end
+            obj.isKnownConnected = true;
+            obj.computedConnected = false;
+            obj.isKnownMultigraph = true;
+            obj.computedMultigraph = false;
+            obj.isKnownLaplacianCoordinates = false;
             obj.numVertices = numVertices;
             obj.incidenceMatrix = zeros(numVertices,0);
             obj.lengths = zeros(1,0);
@@ -74,6 +86,13 @@ classdef MetricGraph < handle
             if length <=0
                 error('Length has to be strictly positive. The given length is %d.', length)
             end
+            if ~obj.computedConnected
+                obj.isKnownConnected = false;
+            end    
+            if ~obj.computedMultigraph
+                obj.isKnownConnected = false;
+            end
+            obj.isKnownLaplacianCoordinates = false;
             temp = zeros(obj.numVertices,1);
             temp(fromVertex) = -1;
             temp(toVertex) = 1;
@@ -234,6 +253,13 @@ classdef MetricGraph < handle
             if edgeNumber < 1
                 error('The edge number cannot be smaller than 1. The given number is %d.', edgeNumber)
             end
+            if obj.computedConnected
+                obj.isKnownConnected = false;
+            end
+            if obj.computedMultigraph
+                obj.isKnownMultigraph = false;
+            end
+            obj.isKnownLaplacianCoordinates = false;
             obj.lengths(edgeNumber)=[];
             obj.incidenceMatrix(:,edgeNumber)=[];
         end
@@ -256,6 +282,13 @@ classdef MetricGraph < handle
             if toVertex < 1
                 error('The ending vertex number cannot be smaller than 1.The given index is %d.', toVertex)
             end
+            if obj.computedConnected
+                obj.isKnownConnected = false;
+            end
+            if obj.computedMultigraph
+                obj.isKnownMultigraph = false;
+            end
+            obj.isKnownLaplacianCoordinates = false;
             obj.removeEdge(find(obj.incidenceMatrix(toVertex,find(obj.incidenceMatrix(fromVertex,:)==-1))==1))
         end  
         function removeAllEdgesSym(obj, Vertex1, Vertex2)
@@ -276,6 +309,13 @@ classdef MetricGraph < handle
             if Vertex2 < 1
                 error('The second vertex number cannot be smaller than 1.The given index is %d.',fromVertex)
             end
+            if obj.computedConnected
+                obj.isKnownConnected = false;
+            end
+            if obj.computedMultigraph
+                obj.isKnownMultigraph = false;
+            end
+            obj.isKnownLaplacianCoordinates = false;
             obj.removeAllEdges(Vertex1, Vertex2)
             obj.removeAllEdges(Vertex2, Vertex1)
         end
@@ -284,13 +324,17 @@ classdef MetricGraph < handle
             % myGraph.isMultigraphic returns true if myGraph is a
             % multigraph, i.e. there exists at least one pair of vertices
             % with multiple edges between them.
-            
-            multigraphic = false;
-            for i = 1:obj.numVertices
-                 if  length(obj.getIncidents(i)) ~= length(unique(obj.getNeighbors(i)))
-                    multigraphic = true;
-                 end    
-            end   
+
+            if ~obj.isKnownMultigraph
+                obj.isKnownMultigraph = true;
+                obj.computedMultigraph = false;
+                for i = 1:obj.numVertices
+                    if  length(obj.getIncidents(i)) ~= length(unique(obj.getNeighbors(i)))
+                        obj.computedMultigraph = true;
+                    end    
+                end
+            end
+            multigraphic = obj.computedMultigraph;
         end
 
         function adjMatrix = getAdjacencyMatrixDir(obj)
@@ -304,7 +348,7 @@ classdef MetricGraph < handle
             for i = 1:obj.getNumEdges
                 tail = find(obj.incidenceMatrix(:,i) == -1);
                 head = find(obj.incidenceMatrix(:,i) == 1);
-                adjMatrix(tail,head) = adjMatrix(tail,head) + 1;
+                adjMatrix(tail, head) = adjMatrix(tail, head) + 1;
             end
         end
    
@@ -381,6 +425,13 @@ classdef MetricGraph < handle
             cloned = MetricGraph(obj.numVertices);
             cloned.incidenceMatrix = obj.incidenceMatrix;
             cloned.lengths = obj.lengths;
+            cloned.isKnownConnected = obj.isKnownConnected;
+            cloned.isKnownMultigraph = obj.isKnownMultigraph;
+            cloned.computedConnected = obj.computedConnected;
+            cloned.computedMultigraph = obj.computedMultigraph;
+            cloned.isKnownLaplacianCoordinates = obj.isKnownLaplacianCoordinates;
+            cloned.computedLaplacianCoordinatesX = obj.computedLaplacianCoordinatesX;
+            cloned.computedLaplacianCoordinatesY = obj.computedLaplacianCoordinatesY;
        end
 
        function plot(obj, X, Y)
@@ -502,24 +553,30 @@ classdef MetricGraph < handle
             % myGraph.isConnected outputs true if the metric graph myGraph 
             % is a (path) connected topological space.
             %
-         
-            toExplore = obj.getIncidents(1);
-            toExploreOrigins = ones(1,width(toExplore));
-            explored = toExplore;
-            listOfReachedVertices = zeros(obj.getNumVertices,1);
-            listOfReachedVertices(1) = true;
-            while width(toExplore) ~= 0
-                currentVertex = obj.getOtherVertex(toExplore(1), toExploreOrigins(1));
-                listOfReachedVertices(currentVertex) = 1;
-                listOfAdjacents = obj.getIncidents(currentVertex);
-                listOfAdjacents = setdiff(listOfAdjacents, intersect(listOfAdjacents, explored));
-                toExplore = [toExplore listOfAdjacents]; %#ok
-                explored = [explored listOfAdjacents]; %#ok
-                toExploreOrigins = [toExploreOrigins currentVertex*ones(1,width(listOfAdjacents))]; %#ok                             
-                toExplore(1) = [];
-                toExploreOrigins(1) = [];
+            if ~obj.isKnownConnected                         
+                obj.isKnownConnected = true;
+                toExplore = obj.getIncidents(1);
+                toExploreOrigins = ones(1,width(toExplore));
+                explored = toExplore;
+                listOfReachedVertices = zeros(obj.getNumVertices,1);
+                listOfReachedVertices(1) = true;
+                while width(toExplore) ~= 0
+                    currentVertex = obj.getOtherVertex(toExplore(1), toExploreOrigins(1));
+                    listOfReachedVertices(currentVertex) = 1;
+                    listOfAdjacents = obj.getIncidents(currentVertex);
+                    listOfAdjacents = setdiff(listOfAdjacents, intersect(listOfAdjacents, explored));
+                    toExplore = [toExplore listOfAdjacents]; %#ok
+                    explored = [explored listOfAdjacents]; %#ok
+                    toExploreOrigins = [toExploreOrigins currentVertex*ones(1,width(listOfAdjacents))]; %#ok                             
+                    toExplore(1) = [];
+                    toExploreOrigins(1) = [];
+                    if all(listOfReachedVertices)
+                        break
+                    end    
+                end
+                obj.computedConnected = all(listOfReachedVertices);
             end
-            connected = all(listOfReachedVertices);
+            connected = obj.computedConnected;
         end
 
         function changeOrientation(obj, edgeIndex)
@@ -576,34 +633,42 @@ classdef MetricGraph < handle
             % If scaleFactor is not precised, the default value used is 3.
             %
             % See also getLaplacianMatrix, plot, tikzPlot.
-
+            
             if nargin < 2
                 scaleFactor = 3;
             end
             if scaleFactor <= 0
                 error('Scalefactor has to be strictly positive, given input is %d.', scaleFactor)
-            end 
-            switch obj.getNumVertices
-                case 1
-                    X = 0;
-                    Y = 0;
-                case 2
-                    Y = [0 0];
-                    X = [-scaleFactor scaleFactor];
-                otherwise
-                    [eigenVectors, eigenValues] = eig(-obj.getLaplacianMatrix);
-                    [~, order] = sort(diag(eigenValues), 'descend');
-                    X = transpose(eigenVectors(:, order(2)));
-                    Y = transpose(eigenVectors(:, order(3)));
-                    scale = max(max(abs(X)), max(abs(Y)));
-                    X = scaleFactor*X/scale;
-                    Y = scaleFactor*Y/scale;
-            end                
+            end
+            if ~obj.isKnownLaplacianCoordinates
+                obj.isKnownLaplacianCoordinates = true;
+                switch obj.getNumVertices
+                    case 1
+                        obj.computedLaplacianCoordinatesX = 0;
+                        obj.computedLaplacianCoordinatesY = 0;
+                    case 2
+                        obj.computedLaplacianCoordinatesY = [0 0];
+                        obj.computedLaplacianCoordinatesX = [-1 1];
+                    otherwise
+                        [eigenVectors, eigenValues] = eig(-obj.getLaplacianMatrix);
+                        [~, order] = sort(diag(eigenValues), 'descend');
+                        obj.computedLaplacianCoordinatesX = transpose(eigenVectors(:, order(2)));
+                        obj.computedLaplacianCoordinatesY = transpose(eigenVectors(:, order(3)));
+                end              
+            end
+            scale = max(max(abs(obj.computedLaplacianCoordinatesX)), max(abs(obj.computedLaplacianCoordinatesY)));
+            if scale ~= 0
+                X = scaleFactor*obj.computedLaplacianCoordinatesX/scale;
+                Y = scaleFactor*obj.computedLaplacianCoordinatesY/scale;
+            else
+                X = obj.computedLaplacianCoordinatesX;
+                Y = obj.computedLaplacianCoordinatesY;
+            end
         end
 
         function canDiv = canonicalDivisor(obj)
-        % myGraph.canonicalDivisor outputs the canonical divisor of
-        % myGraph.
+            % myGraph.canonicalDivisor outputs the canonical divisor of
+            % myGraph.
             
             canDiv = Divisor(obj);
             for i = 1:obj.getNumVertices
