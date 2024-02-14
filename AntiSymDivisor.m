@@ -1,19 +1,19 @@
 classdef AntiSymDivisor < handle & Divisor
     methods
-        function obj = AntiSymDivisor(doubleCover)
+        function obj = AntiSymDivisor(freeDoubleCover)
             % This is the constructor of the class AntiSymDivisor.
-            % D = Divisor(A) creates a divisor defined on the double 
+            % D = Divisor(A) creates a divisor defined on the free double 
             % covering A.
             %
-            % See also Divisor, DoubleCovering.
+            % See also Divisor, FreeDoubleCovering.
 
-            if ~isa(doubleCover,'DoubleCovering')
-                error('The input has to be a metric graph, the input class is %s.', class(doubleCover))
+            if ~isa(freeDoubleCover,'FreeDoubleCovering')
+                error('The input has to be a metric graph, the input class is %s.', class(freeDoubleCover))
             end
-            if ~doubleCover.isConnected
-                error('The input double covering has to be connected and it is not.')
+            if ~freeDoubleCover.isConnected
+                error('The input free double covering has to be connected and it is not.')
             end    
-            obj@Divisor(doubleCover);
+            obj@Divisor(freeDoubleCover);
             obj.edgeIndexVector = zeros(1,0);
             obj.distanceVector = zeros(2,0);
             obj.degreeVector = zeros(1,0);

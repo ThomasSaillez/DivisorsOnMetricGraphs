@@ -179,7 +179,7 @@ classdef MetricGraph < handle
                 error('The vertex number cannot be smaller than 1. The given index is %d.', vertex)
             end
             incidentList = getIncidents(obj, vertex);
-            tempMatrix = obj.incidenceMatrix(:,incidentList);
+            tempMatrix = obj.incidenceMatrix(:, incidentList);
             tempMatrix(vertex,:) = 0;
             [neighbors,~] = find(tempMatrix);
         end
@@ -290,7 +290,8 @@ classdef MetricGraph < handle
             end
             obj.isKnownLaplacianCoordinates = false;
             obj.removeEdge(find(obj.incidenceMatrix(toVertex,find(obj.incidenceMatrix(fromVertex,:)==-1))==1))
-        end  
+        end
+
         function removeAllEdgesSym(obj, Vertex1, Vertex2)
             % myGraph.removeAllEdgesSym(n,m) removes all the edges that go
             % between the n-th vertex and the m-th vertex.
@@ -523,15 +524,43 @@ classdef MetricGraph < handle
             fclose(fileID);
         end
 
-        function otherVertex = getOtherVertex(obj, edge, vertex)
+        function otherVertex = getOtherVertex(obj, edgeIndex, vertex)
             % myGraph.getOtherVertex(edge, vertexIndex) outputs the index
             % of the vertex which is incident to the given edge but which
-            % is not the vertex numbered vertexIndex.
+            % is not the vertex numbered vertexIndex. If the given vertex
+            % is not incident, both incident vertices will be outputed.
             %
-            % See also getNeighbors.
-
-            [otherVertex, ~] = find(obj.incidenceMatrix(:,edge));
+            % See also getNeighbors, getIncidentVertices.
+            
+            if edgeIndex > obj.getNumEdges
+                error('The edge index has to be lower than the number of edges. Given number is %d while there are %d edges on the graph.', edgeIndex, obj.getNumEdges)
+            end
+            if edgeIndex < 1
+                error('The edge index has to be strictly positive. Given number is %d.', edgeIndex)
+            end
+            if vertex > obj.numVertices
+                error('The vertex number cannot exceed the number of vertices. The given index is %d.', vertex)
+            end  
+            if vertex < 1
+                error('The vertex number cannot be smaller than 1. The given index is %d.', vertex)
+            end
+            [otherVertex, ~] = find(obj.incidenceMatrix(:, edgeIndex));
             otherVertex(otherVertex == vertex) = [];
+        end
+
+        function otherVertex = getIncidentVertices(obj, edgeIndex)
+            % myGraph.getIncidentVertices(edgeIndex) outputs the index
+            % of the vertex which are incident to the given edge.
+            %
+            % See also getNeighbors, getOtherVertex.
+            
+            if edgeIndex > obj.getNumEdges
+                error('The edge index has to be lower than the number of edges. Given number is %d while there are %d edges on the graph.', edgeIndex, obj.getNumEdges)
+            end
+            if edgeIndex < 1
+                error('The edge index has to be strictly positive. Given number is %d.', edgeIndex)
+            end            
+            [otherVertex, ~] = find(obj.incidenceMatrix(:, edgeIndex));
         end
 
         function [edge, distance] = vertexToPoint(obj, vertex)
@@ -553,6 +582,7 @@ classdef MetricGraph < handle
             % myGraph.isConnected outputs true if the metric graph myGraph 
             % is a (path) connected topological space.
             %
+
             if ~obj.isKnownConnected                         
                 obj.isKnownConnected = true;
                 toExplore = obj.getIncidents(1);
@@ -617,6 +647,7 @@ classdef MetricGraph < handle
             %
             % See also getAdjacencyMatrix, getAdjacencyMatrixDir,
             % getLaplacianMatrix.
+
             if nargin == 3
                 matrix = obj.incidenceMatrix(row, col);
             else
@@ -670,11 +701,101 @@ classdef MetricGraph < handle
             % myGraph.canonicalDivisor outputs the canonical divisor of
             % myGraph.
             
+            if ~obj.isConnected
+                error('The input metric graph has to be connected.')
+            end
             canDiv = Divisor(obj);
             for i = 1:obj.getNumVertices
                 [edge, distance] = obj.vertexToPoint(i);
                 canDiv.addChip(edge, distance, obj.getDegree(i) - 2)
             end    
         end
+
+        function [cycleMatrix, supportingTree, pathMatrix] = getBasisOfCycles(obj)
+            % [cycleMatrix, supportingTree, pathMatrix] =
+            % myGraph.getBasisOfCycles outputs three informations. 
+            % 
+            % The cycleMatrix will contain a basis of the indenpendent cycles
+            % of myGraph. Every row will correspond to a cycle, every
+            % column to an edge and a +1 tells that the edge is present in
+            % the cycle in its orientation and a -1 that the edge is
+            % present but with its opposite orientation.
+            %
+            % The supportingTree is a row vector containing 1 at the
+            % indices of the supporting tree used to find the basis of
+            % cycles.
+            %
+            % The pathMatrix is a matrix such that the n-th row contains the
+            % path inside the supporting tree from the vertex 1 to the
+            % n-th vertex.
+            
+
+            if ~obj.isConnected
+                error('The input metric graph has to be connected.')
+            end
+
+            pointer = 1;
+            pathMatrix = zeros(obj.getNumVertices, obj.getNumEdges);
+            supportingTree = zeros(1, obj.getNumEdges);
+            cycleMatrix = zeros(obj.getNumEdges - obj.getNumVertices + 1, obj.getNumEdges);
+            toExplore = obj.getIncidents(1);
+            toExploreOrigins = ones(1,width(toExplore));
+            explored = toExplore;
+            while width(toExplore) ~= 0
+                currentVertex = obj.getOtherVertex(toExplore(1), toExploreOrigins(1));
+                listOfAdjacents = obj.getIncidents(currentVertex);
+                listOfAdjacents = setdiff(listOfAdjacents, intersect(listOfAdjacents, explored));
+                toExplore = [toExplore listOfAdjacents]; %#ok
+                explored = [explored listOfAdjacents]; %#ok
+                toExploreOrigins = [toExploreOrigins currentVertex*ones(1,width(listOfAdjacents))]; %#ok               
+                % The next if will add the information about the vertex to
+                % our matrices containing the paths.
+                if any(pathMatrix(currentVertex,:))
+                    loopExplored = pathMatrix(toExploreOrigins(1),:) - pathMatrix(currentVertex,:);
+                    if obj.getTail(toExplore(1)) == toExploreOrigins(1)
+                        loopExplored(toExplore(1)) = 1;
+                    else
+                        loopExplored(toExplore(1)) = -1;
+                    end
+                    cycleMatrix(pointer,:) = loopExplored;
+                    pointer = pointer + 1;
+                else
+                    supportingTree(toExplore(1)) = 1;
+                    pathMatrix(currentVertex,:) = pathMatrix(toExploreOrigins(1),:);
+                    if obj.getTail(toExplore(1)) == toExploreOrigins(1)
+                        pathMatrix(currentVertex, toExplore(1)) = 1;
+                    else
+                        pathMatrix(currentVertex, toExplore(1)) = -1;
+                    end    
+                end
+                toExplore(1) = [];
+                toExploreOrigins(1) = [];
+            end
+        end
+
+        function genus = getGenus(obj)
+            % myGraph.getGenus outputs the genus of myGraph. In other
+            % words, it outputs the number of edges minus the number of
+            % vertices + 1.
+            %
+            % The graph needs to be connected.
+
+            if ~obj.isConnected
+                error("The input graph is not connected.")
+            end
+            genus = obj.getNumEdges - obj.getNumVertices + 1;
+        end
+
+        function jacobianMatrix = getJacobianVariety(obj)
+            % myGraph.getJacobianVariety outputs the Jacobian variety of
+            % the graph. It gives the matrix of the bilinear form
+            % corresponding to the homology of myGraph.
+            %
+            % See also getBasisOfCycles.
+
+            [cycleMatrix, ~] = obj.getBasisOfCycles;
+            jacobianMatrix = cycleMatrix*transpose(cycleMatrix.*obj.getLength);
+        end    
+
     end
 end
